@@ -1,0 +1,1 @@
+find / -type d -name "*uowasit*" 2>/dev/null
